@@ -1,4 +1,5 @@
 # Global DVC & Experiment Parameters
+# this file is all about the paramaters
 
 dataset:
   name: "COD10K_CAMO_NC4K"
@@ -17,7 +18,7 @@ model:
   gradient_kernel: "sobel"            # Options: sobel, scharr, laplacian
   num_classes: 1
   pretrained: true
-
+# my question why not texture  
 train:
   epochs: 100
   learning_rate: 0.001
@@ -48,7 +49,13 @@ deployment:
     dla_core: -1                      # -1 for GPU, 0/1 for DLA cores on Jetson Orin
     output_engine_path: "models/tensorrt/dgnet_s_int8.engine"
 
-integration:
+# why we need this onnx_opset_verson  since while in tesnslow convertion we can explicityl mention cnvert to int8
+
+# we need onnx_opset_version because tensorflow lite and onnx/tensort use two different cinvertion pathway
+# Defines the Quantization Instructions: Converting floating-point numbers like 7.108... into simple whole numbers 
+# (INT8) requires specific math operations. ONNX uses standardized operators like QuantizeLinear and DequantizeLinear to tell optimization engines how to scale and convert those numbers.
+# integration:
+
   mavlink:
     connection_string: "udp:127.0.0.1:14550"
     baud_rate: 57600
