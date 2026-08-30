@@ -1,29 +1,6 @@
 [core]
-    remote = s3remote  
+    remote = gdrive_remote
 ['remote "s3remote"']
-    url = s3://cod-project-data/dvc-storage  # target folder where data is stored  here will be the amazon s3
-
-# this one is the dvc it means data version control
-# this file included the configuration information for the data storage it may be the gcp, aws or google drive ..etc
-# steps to configure 
-#  1. dvc remote add -d mydrive gdrive://1A2B...
-#   so above step 1 creates the .dvc/config file
-#  2. git add the .dvc/config file and comiit it
-
-# for next step is how to data kept inside the browser to upload data
-# note: u don't need to add data through web browser follow below steps
-# dvc add dataset/train.csv # this one example i was took train.csv
-# after it will create the .dvc file
-# then push that dataset/train.csv.dvc intto the git version
-
-#note : dvc push //automcatically upload the actual heavy data to google drive
-
-# next step refer - E:\camoflage\Camouflage-Object-Detection-for-Tactical-Military-Surveillance-COD-by-yak\data\raw.dvc
-
-#---------------- authentication and workflow ------------
-
-# cloud stoarge: larg files (Datasets,model weghts, and build artifcarcs) are hosted in AWS S3 rather tha google drive or git
-# credentails : to download or upload data using dvc pull or dvc push my local CLI needs aws credentials( i already mentioned in the above stemp as dvc remote ....)
-# # to autenticate locally wihtout pushing u credentails to git, run
-# dvc remote modify --local s3remote access_key_id <YOUR_AWS_ACCESS_KEY_ID>
-# dvc remote modify --local s3remote secret_access_key <YOUR_AWS_SECRET_ACCESS_KEY>
+    url = s3://cod-project-data/dvc-storage
+['remote "gdrive_remote"']
+    url = gdrive://13Pk2Ym_Sw6H6I9DajYlMtLkv-Ho5U6q2
