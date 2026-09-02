@@ -1,1 +1,3 @@
 /raw
+#it will automatically update the gitignore if i use dvc add folder .. it means it will add the that folder into the
+gitignore.
