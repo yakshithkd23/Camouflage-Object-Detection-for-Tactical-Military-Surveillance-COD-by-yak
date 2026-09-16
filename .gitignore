@@ -74,7 +74,7 @@ models/tensorrt/*.engine
 models/tensorrt/*.plan
 
 # TensorBoard & Experiment logs
-experiments/*
+# experiments/*- this one i was commented ,since i will adding testing method and outputs there
 !experiments/.gitkeep
 logs/
 *.log
