@@ -14,15 +14,14 @@ Here is step-by-step how an input image with a military/army target passes throu
 ---
 
 ### Step-by-Step Pipeline Walkthrough
-
 ```mermaid
 graph TD
     A["Raw Input RGB Image (X)<br><i>(e.g., Army soldier hidden in forest)</i>"] --> B["Stage 1: DGNet Segmentor"]
     A --> C["Mask-Gated ROI Cropper"]
     
-    B -->|Generates Spatial Mask M| C
+    B -->|"Generates Spatial Mask M"| C
     
-    C -->|Hadamard Product (X ⊙ M) + Contour Crop| D["Cropped Target ROI (224x224)<br><i>(Foliage zeroed out)</i>"]
+    C -->|"Hadamard Product (X ⊙ M) + Contour Crop"| D["Cropped Target ROI (224x224)<br><i>(Foliage zeroed out)</i>"]
     
     D --> E["EfficientNet-B0 Classifier"]
     E --> F["Feature Extraction via MBConv + SE Blocks"]
@@ -39,8 +38,6 @@ graph TD
     class B,E,F,G stage;
     class C,D crop;
     class H output;
-
-```
 
 ---
 
