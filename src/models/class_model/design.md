@@ -12,19 +12,28 @@ Instead of processing the raw frame directly, Stage 2 takes the original **Input
 
 ```mermaid
 graph TD
-    X["[ Input RGB Image (X) ]"] --> DGNet["[ DGNet Segmentation ]"]
-    DGNet --> M["[ Mask Image (M) ]"]
+    A["Raw Input RGB Image (X)<br><i>(e.g., Army soldier hidden in forest)</i>"] --> B["Stage 1: DGNet Segmentor"]
+    A --> C["Mask-Gated ROI Cropper"]
+    
+    B -->|Generates Spatial Mask M| C
+    
+    C -->|Hadamard Product (X ⊙ M) + Contour Crop| D["Cropped Target ROI (224x224)<br><i>(Foliage zeroed out)</i>"]
+    
+    D --> E["EfficientNet-B0 Classifier"]
+    E --> F["Feature Extraction via MBConv + SE Blocks"]
+    F --> G["Softmax Classification Head"]
+    
+    G --> H["Class Prediction (Y): Camouflaged Target vs. Non-Target"]
 
-    X --> Join
-    M --> Join
+    classDef input fill:#1f2937,stroke:#6b7280,color:#fff;
+    classDef stage fill:#1e3a8a,stroke:#3b82f6,color:#fff;
+    classDef crop fill:#065f46,stroke:#10b981,color:#fff;
+    classDef output fill:#4c1d95,stroke:#8b5cf6,color:#fff;
 
-    Join --> Crop["[ Mask-Gated ROI Crop ]"]
-    Crop --> EffNet["[ EfficientNet Classifier ]"]
-    EffNet --> Y["[ Target Class Label (Y) ]"]
-
-    classDef default fill:#121212,stroke:#ffffff,color:#ffffff,stroke-width:1px;
-    class X,DGNet,M,Crop,EffNet,Y default;
-
+    class A input;
+    class B,E,F,G stage;
+    class C,D crop;
+    class H output;
 ```
 
 ---
