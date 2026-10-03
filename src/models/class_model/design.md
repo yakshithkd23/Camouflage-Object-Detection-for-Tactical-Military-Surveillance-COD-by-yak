@@ -8,7 +8,12 @@ Instead of processing the raw frame directly, Stage 2 takes the original **Input
 
 ---
 
-## Data Flow Diagram (Mermaid)
+## Data Flow Diagram 
+Here is step-by-step how an input image with a military/army target passes through the pipeline, gets processed using the generated mask, and is evaluated by **EfficientNet-B0** to decide whether it is **Camouflaged Target** or **Non-Target (Background Noise)**.
+
+---
+
+### Step-by-Step Pipeline Walkthrough
 
 ```mermaid
 graph TD
@@ -34,7 +39,57 @@ graph TD
     class B,E,F,G stage;
     class C,D crop;
     class H output;
+
 ```
+
+---
+
+### 1. Step 1: Input RGB Frame ($X$) & DGNet Mask Generation ($M$)
+
+* **The Raw Input ($X$):** A full surveillance image containing heavy background clutter (e.g., an army soldier in BDU camouflage standing among trees and foliage).
+* **DGNet Inference:** The frame passes into **Stage 1 (DGNet)**, which outputs a single-channel **Binary Mask ($M$)** highlighting candidate pixel regions where a camouflage boundary is localized.
+
+---
+
+### 2. Step 2: Mask-Gated ROI Cropping (Filtering Out Noise)
+
+Passing full raw images into a classifier often leads to false positives because the network gets confused by ambient tree shadows, leaves, or rocks.
+To fix this, the pipeline performs **Mask-Gating**:
+
+1. **Element-wise Multiplication:** $X_{\text{Gated}} = X_{\text{RGB}} \odot M_{\text{DGNet}}$. Every pixel outside the mask turns completely black ($0, 0, 0$), stripping away the foliage and terrain background.
+2. **Bounding Box Crop:** Contour detection draws a bounding box around the remaining non-zero patch and crops it.
+3. **Resizing:** The cropped patch is resized to $224 \times 224 \times 3$, creating a clean **Region of Interest (ROI)** patch focusing strictly on the potential army target.
+
+---
+
+### 3. Step 3: EfficientNet Processing & Feature Learning
+
+The $224 \times 224$ cropped ROI patch enters **EfficientNet-B0**:
+
+1. **MBConv Depthwise Convolutions:** The network scans spatial properties across channels efficiently using minimal parameters (~5.3M).
+2. **Squeeze-and-Excitation (SE) Channel Attention:** Since camouflage is designed to blur edges, SE blocks dynamically scale important feature channels up and suppress irrelevant ones. They force the network to pay attention to subtle tactical indicators:
+* **Unnatural geometric outlines:** Straight lines of gear, helmets, weapon barrels, or boot soles.
+* **Textural irregularities:** Synthetic fabric weave vs. organic bark/leaf textures.
+
+
+3. **Global Average Pooling & Dense Head:** Features are flattened into a 1280-dimensional embedding vector $\phi(\text{ROI})$ and mapped through a Linear + Softmax layer:
+
+$$\hat{y} = \text{Softmax}(W \cdot \phi(\text{ROI}) + b)$$
+
+
+
+---
+
+### 4. Step 4: Final Grouping & Decision Output
+
+The network outputs a final prediction confidence score ($0.0 - 1.0$) categorized into grouped classes:
+
+* **Group A: Camouflaged Target Identified** (Confidence $> \text{Threshold}$)
+* Sub-classes: *Camouflaged Personnel*, *Armored Vehicle*, *Equipment/Gear*.
+
+
+* **Group B: Non-Target / False Alarm** (Confidence $< \text{Threshold}$)
+* Rejects candidate patches caused by segmentor noise (e.g., strange leaf formations or rock shadows misidentified by Stage 1).
 
 ---
 
