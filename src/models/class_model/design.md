@@ -1,62 +1,56 @@
 # Stage 2: Tactical Mask-Gated Target Classifier
 
 ## Aim & Objective
-The Stage 2 Target Classifier takes the spatial region of interest identified by Stage 1 ([DGNet](https://github.com/Gouravbirwaz/Camouflage-Object-Detection-for-Tactical-Military-Surveillance-COD-/blob/dev_yakshith_dev/src/models/dgnet.py)) and categorizes the masked tactical entity (e.g., Personnel, Vehicles, Decoys). 
 
-By isolating the target from surrounding foliage and terrain noise via mask-gating, the classifier achieves high categorical accuracy on subtle, camouflaged features without spending compute on background elements.
+The primary aim of **Stage 2** is to verify and classify whether a candidate surveillance region contains a camouflaged entity or non-target noise.
+
+Instead of processing the raw frame directly, Stage 2 takes the original **Input RGB Image ($X$)** alongside the spatial **Mask Image ($M$)** produced by Stage 1 (DGNet Segmentation). By masking and cropping tightly around the isolated Region of Interest (ROI), Stage 2 removes surrounding foliage and terrain noise to accurately predict whether a camouflaged target is present and identify its specific target category ($Y$).
 
 ---
 
-## Architectural Approach & Data Flow
+## Data Flow Diagram (Mermaid)
 
 ```mermaid
 graph TD
-    A[Input RGB Frame X] --> B[Stage 1: DGNet Segmentor]
-    A --> C[Mask-Gated ROI Cropper]
-    
-    B -->|Binary Mask M| C
-    
-    C -->|Zero Background & Crop BBox| D[Cropped Tactical ROI]
-    
-    D --> E[Stage 2: EfficientNet-B0 Backbone]
-    E --> F[MBConv + Squeeze-and-Excitation]
-    F --> G[Classification Head]
-    
-    G --> H[Class Prediction Y]
-    G --> I[Confidence Score %]
+    X["[ Input RGB Image (X) ]"] --> DGNet["[ DGNet Segmentation ]"]
+    DGNet --> M["[ Mask Image (M) ]"]
+
+    X --> Join
+    M --> Join
+
+    Join --> Crop["[ Mask-Gated ROI Crop ]"]
+    Crop --> EffNet["[ EfficientNet Classifier ]"]
+    EffNet --> Y["[ Target Class Label (Y) ]"]
+
+    classDef default fill:#121212,stroke:#ffffff,color:#ffffff,stroke-width:1px;
+    class X,DGNet,M,Crop,EffNet,Y default;
 
 ```
 
 ---
 
-## Technical Explanation & Mathematical Formulation
+## Technical Details
 
-### 1. Mask-Gated ROI Extraction
+### 1. Mathematical Formulation
 
-To zero out background clutter (foliage, terrain, ambient noise), the full RGB frame undergoes element-wise Hadamard multiplication with the predicted segmentor mask $M_{\text{DGNet}}$:
+* **Mask-Gated Multiplication:**
 
 $$X_{\text{Gated}} = X_{\text{RGB}} \odot M_{\text{DGNet}}$$
 
-Contour bounding box extraction then identifies spatial coordinates $(x_{\min}, y_{\min}, w, h)$ around the non-zero region to crop the tactical patch:
 
-$$\text{ROI} = \text{Crop}(X_{\text{Gated}}, x_{\min}, y_{\min}, w, h) \quad \longrightarrow \quad \text{Resize to } 224 \times 224$$
+* **ROI Extraction & Resizing:**
 
-### 2. Output Formulation
+$$\text{ROI} = \text{Crop}(X_{\text{Gated}}, x_{\min}, y_{\min}, w, h) \longrightarrow \text{Resize to } 224 \times 224$$
 
-The cropped tensor $\text{ROI} \in \mathbb{R}^{3 \times 224 \times 224}$ passes into the classification network to yield target probabilities:
+
+* **Probability Output:**
 
 $$\hat{y} = \text{Softmax}(W \cdot \phi(\text{ROI}) + b)$$
 
-Where:
 
-* $\phi(\text{ROI})$ represents the feature embedding extracted by the backbone.
-* $\hat{y}$ is the probability vector over the target classes.
 
----
+### 2. Why EfficientNet-B0?
 
-## Why EfficientNet-B0 for Classification?
-
-1. **Compound Scaling ($\alpha, \beta, \gamma$):** Uniformly balances network depth, width, and input resolution. This enables maximum feature extraction capability on small, tightly cropped target regions.
-2. **Channel-Wise Attention (SE Blocks):** Squeeze-and-Excitation modules recalibrate channel weights to highlight fine-grained tactical indicators (e.g., metallic reflections, weapon outlines) against organic surroundings.
-3. **Optimized Edge Footprint:** At **~5.3M parameters** and **~0.39 GFLOPs**, EfficientNet-B0 fits strictly within low-latency RAM budgets alongside Stage 1 on TFLite and edge runtime engines.
-
+* **Compound Scaling:** Uniformly balances depth, width, and resolution to maximize accuracy on small cropped target patches.
+* **Squeeze-and-Excitation (SE) Attention:** Highlights subtle tactical indicators against organic background clutter.
+* **Edge Compatibility:** At **~5.3M parameters**, it runs smoothly on mobile/edge runtimes alongside Stage 1.
