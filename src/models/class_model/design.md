@@ -19,9 +19,10 @@ graph TD
     A["Raw Input RGB Image (X)<br><i>(e.g., Army soldier hidden in forest)</i>"] --> B["Stage 1: DGNet Segmentor"]
     A --> C["Mask-Gated ROI Cropper"]
     
-    B -->|"Generates Spatial Mask M"| C
+    B --> M["Generates Spatial Mask M"]
+    M --> C
     
-    C -->|"Hadamard Product (X ⊙ M) + Contour Crop"| D["Cropped Target ROI (224x224)<br><i>(Foliage zeroed out)</i>"]
+    C --> D["Cropped Target ROI (224x224)<br><i>(Foliage zeroed out)</i>"]
     
     D --> E["EfficientNet-B0 Classifier"]
     E --> F["Feature Extraction via MBConv + SE Blocks"]
@@ -38,8 +39,7 @@ graph TD
     class B,E,F,G stage;
     class C,D crop;
     class H output;
-
----
+    ```
 
 ### 1. Step 1: Input RGB Frame ($X$) & DGNet Mask Generation ($M$)
 
