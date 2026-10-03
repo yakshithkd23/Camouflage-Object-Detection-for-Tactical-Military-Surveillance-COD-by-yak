@@ -9,11 +9,13 @@ Instead of processing the raw frame directly, Stage 2 takes the original **Input
 ---
 
 ## Data Flow Diagram 
+
 Here is step-by-step how an input image with a military/army target passes through the pipeline, gets processed using the generated mask, and is evaluated by **EfficientNet-B0** to decide whether it is **Camouflaged Target** or **Non-Target (Background Noise)**.
 
 ---
 
 ### Step-by-Step Pipeline Walkthrough
+
 ```mermaid
 graph TD
     A["Raw Input RGB Image (X)<br><i>(e.g., Army soldier hidden in forest)</i>"] --> B["Stage 1: DGNet Segmentor"]
@@ -39,7 +41,10 @@ graph TD
     class B,E,F,G stage;
     class C,D crop;
     class H output;
-    ```
+
+```
+
+---
 
 ### 1. Step 1: Input RGB Frame ($X$) & DGNet Mask Generation ($M$)
 
@@ -73,8 +78,6 @@ The $224 \times 224$ cropped ROI patch enters **EfficientNet-B0**:
 
 $$\hat{y} = \text{Softmax}(W \cdot \phi(\text{ROI}) + b)$$
 
-
-
 ---
 
 ### 4. Step 4: Final Grouping & Decision Output
@@ -88,6 +91,8 @@ The network outputs a final prediction confidence score ($0.0 - 1.0$) categorize
 * **Group B: Non-Target / False Alarm** (Confidence $< \text{Threshold}$)
 * Rejects candidate patches caused by segmentor noise (e.g., strange leaf formations or rock shadows misidentified by Stage 1).
 
+
+
 ---
 
 ## Technical Details
@@ -98,20 +103,21 @@ The network outputs a final prediction confidence score ($0.0 - 1.0$) categorize
 
 $$X_{\text{Gated}} = X_{\text{RGB}} \odot M_{\text{DGNet}}$$
 
-
 * **ROI Extraction & Resizing:**
 
 $$\text{ROI} = \text{Crop}(X_{\text{Gated}}, x_{\min}, y_{\min}, w, h) \longrightarrow \text{Resize to } 224 \times 224$$
-
 
 * **Probability Output:**
 
 $$\hat{y} = \text{Softmax}(W \cdot \phi(\text{ROI}) + b)$$
 
-
+---
 
 ### 2. Why EfficientNet-B0?
 
 * **Compound Scaling:** Uniformly balances depth, width, and resolution to maximize accuracy on small cropped target patches.
 * **Squeeze-and-Excitation (SE) Attention:** Highlights subtle tactical indicators against organic background clutter.
 * **Edge Compatibility:** At **~5.3M parameters**, it runs smoothly on mobile/edge runtimes alongside Stage 1.
+
+```
+
